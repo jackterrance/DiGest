@@ -1,0 +1,20 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; font-family: 'Inter', system-ui, sans-serif; }
+  body { @apply bg-slate-50 text-slate-900 antialiased; }
+  .dark body { @apply bg-slate-900 text-slate-100; }
+  input, select, textarea { @apply text-base; }
+}
+
+@layer components {
+  .card { @apply bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-xl; }
+  .input-base { @apply w-full p-2.5 border border-slate-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 rounded-lg; }
+}
+
+@layer utilities {
+  .safe-top { padding-top: env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}
