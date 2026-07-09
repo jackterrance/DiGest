@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react' // O el plugin de react que uses
+import react from '@vitejs/plugin-react' 
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
@@ -12,7 +12,7 @@ export default defineConfig({
         name: 'Consultorio Psicológico',
         short_name: 'ConsultorioPsi',
         description: 'Aplicación de gestión para consultorio psicológico',
-        theme_color: '#ffffff', // Cámbialo por el color primario de tu Tailwind
+        theme_color: '#ffffff', 
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
@@ -36,5 +36,8 @@ export default defineConfig({
         ]
       }
     })
-  ]
+  ],
+  build: {
+    chunkSizeWarningLimit: 1600 // Evita que la alerta de fragmentos grandes detenga la compilación
+  }
 })
