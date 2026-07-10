@@ -187,7 +187,7 @@ export function ReportsScreen() {
           className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm hover:border-emerald-300 hover:shadow-md transition duration-200 cursor-pointer flex justify-between items-center group"
         >
           <div>
-            <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Ingresos Facturados</span>
+            <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest block mb-1">Ingresos</span>
             <span className="text-2xl font-bold text-slate-800">${stats.ingresosTotales.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
           </div>
           <div className="p-3 bg-emerald-50 rounded-xl text-emerald-600 group-hover:scale-110 transition">
