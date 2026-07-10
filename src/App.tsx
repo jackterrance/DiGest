@@ -12,7 +12,7 @@ import { Spinner } from './components/ui/Spinner'
 
 // Importamos las nuevas páginas funcionales
 import CalendarPage from './pages/CalendarPage'
-import ReportsPage from './pages/ReportsPage'
+import { ReportsScreen } from './pages/ReportsPage'
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth()
@@ -41,7 +41,7 @@ export default function App() {
               <Route path="beneficiarios" element={<BeneficiariesScreen />} />
               <Route path="inventario"    element={<InventoryScreen />} />
               {/* Nueva ruta de analíticas e ingresos */}
-              <Route path="reportes"      element={<ReportsPage />} />
+              <Route path="reportes"      element={<ReportsScreen/>} />
               <Route path="configuracion" element={<SettingsScreen />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
