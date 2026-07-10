@@ -138,48 +138,44 @@ export function ReportsScreen() {
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24 p-4 font-sans">
       
-      {/* Encabezado */}
-      <div className="mb-6 flex justify-between items-start">
-        <div>
-          <span className="text-xs font-medium text-slate-400 block tracking-wider uppercase">Consultorio Demo</span>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Reportes</h1>
-          <p className="text-xs text-slate-500">Métricas e ingresos detallados</p>
-        </div>
-        <button 
-          onClick={fetchReportData}
-          className="p-2.5 bg-white border border-slate-200/80 rounded-xl shadow-sm text-slate-600 hover:bg-slate-50 transition active:scale-95"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
+      
 
-      {/* Tarjeta de Control Superior */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-slate-700">Rango del Reporte</h3>
-            <p className="text-xs text-slate-400">Filtra todas las tarjetas en tiempo real</p>
-          </div>
-        </div>
-        
-        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/40 w-full sm:w-auto">
-          {(['hoy', 'semana', 'mes'] as RangeType[]).map((range) => (
-            <button
-              key={range}
-              onClick={() => setDateRange(range)}
-              className={`flex-1 sm:flex-initial text-xs font-medium py-1.5 px-3.5 rounded-lg capitalize transition ${
-                dateRange === range 
-                  ? 'bg-white text-slate-800 shadow-sm' 
-                  : 'text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
+      {/* Tarjeta de Control Superior con Selector de Fecha y Botón de Recarga integrado */}
+<div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm mb-5 flex items-center justify-between gap-3">
+  <div className="flex items-center gap-3">
+    <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
+      <TrendingUp className="w-5 h-5" />
+    </div>
+    <div>
+      <h3 className="text-sm font-semibold text-slate-700">Rango del Reporte</h3>
+      <p className="text-xs text-slate-400 hidden sm:block">Filtra las tarjetas en tiempo real</p>
+    </div>
+  </div>
+  
+  <div className="flex items-center gap-2">
+    <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/40">
+      {(['hoy', 'semana', 'mes'] as RangeType[]).map((range) => (
+        <button
+          key={range}
+          onClick={() => setDateRange(range)}
+          className={`text-xs font-medium py-1.5 px-3.5 rounded-lg capitalize transition ${
+            dateRange === range 
+              ? 'bg-white text-slate-800 shadow-sm' 
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          {range}
+        </button>
+      ))}
+    </div>
+
+    {/* Botón de actualizar reubicado elegantemente aquí */}
+    <button 
+      onClick={fetchReportData}
+      className="p-2 bg-white border border-slate-200/80 rounded-xl shadow-sm text-slate-600 hover:bg-slate-50 transition active:scale-95">
+      <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+     </button>
+      </div>
       </div>
 
       {/* REJILLA DE TARJETAS INTERACTIVAS */}
