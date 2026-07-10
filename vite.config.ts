@@ -10,8 +10,8 @@ export default defineConfig({
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'Consultorio Psicológico',
-        short_name: 'ConsultorioPsi',
-        description: 'Aplicación de gestión para consultorio psicológico',
+        short_name: 'Gestion Digital',
+        description: 'Aplicación de gestión digital de citas y expedientes',
         theme_color: '#ffffff', 
         background_color: '#ffffff',
         display: 'standalone',
