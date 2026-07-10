@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react'
 import { Spinner } from '../components/ui/Spinner'
+import nuevoLogo from '/pwa-512x512.png' // Importación directa desde la carpeta public
 
 export function LoginScreen() {
   const { signIn } = useAuth()
@@ -30,11 +31,16 @@ export function LoginScreen() {
     <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-clinical-mint flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-primary-600 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-soft">
-            <span className="text-white text-4xl font-serif font-bold">ψ</span>
+          {/* Se reemplazó el contenedor CSS por la etiqueta img oficial */}
+          <div className="w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+            <img 
+              src={nuevoLogo} 
+              alt="Logo DiGest" 
+              className="w-full h-full object-contain rounded-2xl shadow-md" 
+            />
           </div>
-          <h1 className="text-2xl font-bold text-primary-900">PsiGest</h1>
-          <p className="text-sm text-slate-600 mt-1">Gestión clínica premium</p>
+          <h1 className="text-2xl font-bold text-primary-900">DiGest</h1>
+          <p className="text-sm text-slate-600 mt-1">Gestión Digital Premium</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-soft p-6 space-y-4">
