@@ -98,7 +98,7 @@ export function SettingsScreen() {
       </div>
 
       <div className="text-center text-xs text-slate-400 pt-4">
-        <p>PsiGest v1.0.0</p>
+        <p>DiGest v1.0.0</p>
         <p className="mt-1">PWA Multi-Tenant Segura</p>
       </div>
 
