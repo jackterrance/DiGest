@@ -13,7 +13,7 @@ const titles: Record<string, { title: string; subtitle?: string }> = {
 
 export function MobileShell() {
   const { pathname } = useLocation()
-  const t = titles[pathname] || { title: 'PsiGest' }
+  const t = titles[pathname] || { title: 'DiGest' }
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 max-w-md mx-auto shadow-soft">
       <TopBar title={t.title} subtitle={t.subtitle} />
