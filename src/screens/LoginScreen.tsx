@@ -89,19 +89,16 @@ export function LoginScreen() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-4">
       <div className="w-full max-w-md">
-        {/* Logo / Header */}
-        {/* Logo / Header */}
+{/* Logo / Header */}
 <div className="text-center mb-6">
   <img
-    src="/logo-digest.png"
+    src="/pwa-192x192.png"
     alt="DiGest"
     className="w-20 h-20 mx-auto rounded-2xl shadow-md mb-3 object-cover"
   />
   <h1 className="text-3xl font-bold text-slate-800">DiGest</h1>
   <p className="text-sm text-slate-500 mt-1">Gestión Digital Premium</p>
 </div>
-
-
         {/* Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Tabs */}
