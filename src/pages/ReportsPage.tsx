@@ -22,7 +22,7 @@ interface PagoRow {
 
 interface ExpedienteRow {
   id: string;
-  status: string | null;
+  estado: string | null;  // 👈 antes era status
   consultorio_id: string;
 }
 
@@ -65,7 +65,7 @@ export function ReportsScreen() {
           .eq('consultorio_id', tenant.id), // 👈 tenant.id no user.consultorio_id
         supabase
           .from('beneficiarios_expedientes')
-          .select('id, status, consultorio_id')
+          .select('id, estado, consultorio_id')
           .eq('consultorio_id', tenant.id),
       ]);
 
@@ -140,8 +140,8 @@ export function ReportsScreen() {
       }
     });
 
-    const activos = expedientes.filter((e) => (e.status ?? '') === 'activo').length;
-    const inactivos = expedientes.filter((e) => (e.status ?? '') === 'inactivo').length;
+    const activos = expedientes.filter((e) => (e.estado ?? '') === 'activo').length;
+    const inactivos = expedientes.filter((e) => (e.estado ?? '') === 'inactivo').length;
 
     setStats({
       ingresosTotales: total,

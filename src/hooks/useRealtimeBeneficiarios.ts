@@ -22,7 +22,7 @@ export function useRealtimeBeneficiarios() {
     setLoading(true);
     const { data, error } = await supabase
       .from('beneficiarios_expedientes')
-      .select('id, nombre_completo, codigo_expediente, estado, consultorio_id')
+      .select('id, nombre_completo, codigo_expediente, estado, consultorio_id')  // 👈 estado
       .eq('consultorio_id', tenant.id)
       .order('nombre_completo', { ascending: true });
     if (!error && data) setBeneficiarios(data as Beneficiario[]);
