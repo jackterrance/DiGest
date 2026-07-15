@@ -4,12 +4,17 @@
 export interface Consultorio {
   id: string
   nombre: string
-  slug: string
-  plan: 'basico' | 'pro' | 'enterprise'
-  activo: boolean
-  created_at: string
-  updated_at: string
+  slug?: string
+  plan?: string
+  activo?: boolean
+  color_primario?: string      // 👈 AGREGAR
+  color_secundario?: string    // 👈 AGREGAR
+  color_acento?: string        // 👈 AGREGAR
+  logo_url?: string | null     // 👈 AGREGAR
+  created_at?: string
+  updated_at?: string
 }
+
 
 export interface PerfilUsuario {
   id: string
