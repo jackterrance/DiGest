@@ -18,9 +18,11 @@ type ModalType = 'ingresos' | 'consultas' | 'pacientes' | null;
 type RangeType = 'hoy' | 'semana' | 'mes';
 
 interface PagoRow {
+  id: string;
   monto: number | null;
   metodo_pago: string | null;
-  created_at: string;
+  estado: string | null;
+  fecha_pago: string;
   consultorio_id: string;
 }
 
@@ -32,13 +34,14 @@ interface ExpedienteRow {
 
 export function ReportsScreen() {
   const { user } = useAuth() as { user: { consultorio_id?: string } | null };
-  const { citas } = useRealtimeCitas(); // 🆕 REALTIME
+  const { citas } = useRealtimeCitas();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [dateRange, setDateRange] = useState<RangeType>('mes');
 
   const [pagos, setPagos] = useState<PagoRow[]>([]);
   const [expedientes, setExpedientes] = useState<ExpedienteRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [stats, setStats] = useState({
     ingresosTotales: 0,
@@ -52,24 +55,18 @@ export function ReportsScreen() {
   });
 
   // Cargar pagos y expedientes
-  useEffect(() => {
-    if (!user?.consultorio_id) return;
-    loadPagosYExpedientes();
-  }, [user?.consultorio_id]);
-
-  // 🆕 Recalcular stats cada vez que cambian citas, pagos o rango
-  useEffect(() => {
-    calcularStats();
-  }, [citas, pagos, expedientes, dateRange]);
-
-  const loadPagosYExpedientes = async () => {
-    if (!user?.consultorio_id) return;
+  const loadData = async () => {
+    if (!user?.consultorio_id) {
+      console.warn('Sin consultorio_id');
+      return;
+    }
     setLoading(true);
+    setError(null);
     try {
       const [pagosRes, expRes] = await Promise.all([
         supabase
           .from('pagos_citas')
-          .select('monto, metodo_pago, created_at, consultorio_id')
+          .select('id, monto, metodo_pago, estado, fecha_pago, consultorio_id')
           .eq('consultorio_id', user.consultorio_id),
         supabase
           .from('beneficiarios_expedientes')
@@ -77,14 +74,35 @@ export function ReportsScreen() {
           .eq('consultorio_id', user.consultorio_id),
       ]);
 
+      console.log('Pagos response:', pagosRes);
+      console.log('Expedientes response:', expRes);
+
+      if (pagosRes.error) {
+        console.error('Error en pagos:', pagosRes.error);
+        setError('Error cargando pagos: ' + pagosRes.error.message);
+      }
+      if (expRes.error) {
+        console.error('Error en expedientes:', expRes.error);
+      }
+
       if (pagosRes.data) setPagos(pagosRes.data as PagoRow[]);
       if (expRes.data) setExpedientes(expRes.data as ExpedienteRow[]);
     } catch (err) {
-      console.error(err);
+      console.error('Excepción:', err);
+      setError(String(err));
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadData();
+  }, [user?.consultorio_id]);
+
+  // Recalcular cuando cambian las dependencias
+  useEffect(() => {
+    calcularStats();
+  }, [citas, pagos, expedientes, dateRange]);
 
   const getFechaFiltro = (): Date => {
     const ahora = new Date();
@@ -109,16 +127,21 @@ export function ReportsScreen() {
     // Citas filtradas por rango
     const citasFiltradas = citas.filter((c) => {
       if (!c.fecha) return false;
-      return new Date(c.fecha) >= fechaFiltro;
+      const fechaCita = new Date(c.fecha + 'T00:00:00');
+      return fechaCita >= fechaFiltro;
     });
 
     const completadas = citasFiltradas.filter((c) => c.estado === 'completada').length;
     const canceladas = citasFiltradas.filter((c) => c.estado === 'cancelada').length;
 
-    // Pagos filtrados por rango
+    // Pagos filtrados por rango - 👇 USA fecha_pago NO created_at
     const pagosFiltrados = pagos.filter((p) => {
-      if (!p.created_at) return false;
-      return new Date(p.created_at) >= fechaFiltro;
+      if (!p.fecha_pago) return false;
+      // Solo contar pagos confirmados/completados
+      if (p.estado && p.estado !== 'completado' && p.estado !== 'confirmado' && p.estado !== 'pagado') {
+        return false;
+      }
+      return new Date(p.fecha_pago) >= fechaFiltro;
     });
 
     let total = 0;
@@ -129,7 +152,9 @@ export function ReportsScreen() {
       total += monto;
       const metodo = (p.metodo_pago ?? '').toLowerCase();
       if (metodo === 'efectivo') efectivo += monto;
-      else if (metodo === 'transferencia' || metodo === 'banco') transferencia += monto;
+      else if (metodo === 'transferencia' || metodo === 'banco' || metodo === 'tarjeta') {
+        transferencia += monto;
+      }
     });
 
     // Pacientes
@@ -182,13 +207,21 @@ export function ReportsScreen() {
           </div>
 
           <button
-            onClick={loadPagosYExpedientes}
-            className="p-2 bg-white border border-slate-200/80 rounded-xl shadow-sm text-slate-600 hover:bg-slate-50 transition active:scale-95"
+            onClick={loadData}
+            disabled={loading}
+            className="p-2 bg-white border border-slate-200/80 rounded-xl shadow-sm text-slate-600 hover:bg-slate-50 transition active:scale-95 disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
+
+      {/* Error visible */}
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 mb-4 text-xs text-rose-700">
+          ⚠️ {error}
+        </div>
+      )}
 
       {/* Tarjetas */}
       <div className="space-y-4">
@@ -217,9 +250,7 @@ export function ReportsScreen() {
             <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest block mb-1">
               Consultas Registradas
             </span>
-            <span className="text-2xl font-bold text-slate-800">
-              {stats.consultasTotales}
-            </span>
+            <span className="text-2xl font-bold text-slate-800">{stats.consultasTotales}</span>
           </div>
           <div className="p-3 bg-blue-50 rounded-xl text-blue-600 group-hover:scale-110 transition">
             <Calendar className="w-5 h-5" />
@@ -234,9 +265,7 @@ export function ReportsScreen() {
             <span className="text-2xs font-bold text-slate-400 uppercase tracking-widest block mb-1">
               Pacientes Activos
             </span>
-            <span className="text-2xl font-bold text-slate-800">
-              {stats.pacientesActivos}
-            </span>
+            <span className="text-2xl font-bold text-slate-800">{stats.pacientesActivos}</span>
           </div>
           <div className="p-3 bg-indigo-50 rounded-xl text-indigo-600 group-hover:scale-110 transition">
             <Users className="w-5 h-5" />
@@ -331,9 +360,7 @@ export function ReportsScreen() {
                   </div>
                   <div className="bg-slate-50 border border-slate-100 p-3 rounded-xl flex justify-between items-center">
                     <span className="text-sm font-medium text-slate-600">Total en este rango</span>
-                    <span className="font-bold text-slate-800">
-                      {stats.consultasTotales} citas
-                    </span>
+                    <span className="font-bold text-slate-800">{stats.consultasTotales} citas</span>
                   </div>
                 </div>
               )}

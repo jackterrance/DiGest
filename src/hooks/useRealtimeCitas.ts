@@ -12,10 +12,12 @@ export interface Cita {
   estado: string;
   tipo_sesion: string;
   modalidad: string;
-  notas?: string | null;
-  titulo?: string | null;
+  notas: string | null;
+  titulo: string | null;
   es_libre: boolean;
-  created_at?: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export function useRealtimeCitas() {
@@ -23,7 +25,6 @@ export function useRealtimeCitas() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Cargar citas iniciales
   const fetchCitas = useCallback(async () => {
     if (!tenant) return;
     setLoading(true);
@@ -32,43 +33,59 @@ export function useRealtimeCitas() {
       .select('*')
       .eq('consultorio_id', tenant.id)
       .order('fecha', { ascending: true });
-
     if (!error && data) setCitas(data as Cita[]);
     setLoading(false);
   }, [tenant]);
 
-  // Suscripción realtime
   useEffect(() => {
-    if (!tenant) return;
+    if (!tenant) {
+      setCitas([]);
+      return;
+    }
 
-    fetchCitas();
+    let mounted = true;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
 
-    const channel = supabase
-      .channel(`citas-${tenant.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'citas',
-          filter: `consultorio_id=eq.${tenant.id}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setCitas((prev) => [...prev, payload.new as Cita]);
-          } else if (payload.eventType === 'UPDATE') {
-            setCitas((prev) =>
-              prev.map((c) => (c.id === payload.new.id ? (payload.new as Cita) : c))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setCitas((prev) => prev.filter((c) => c.id !== payload.old.id));
+    const setup = async () => {
+      // 1) Carga inicial
+      await fetchCitas();
+
+      if (!mounted) return;
+
+      // 2) Crear canal y suscribir ANTES de agregar listeners
+      channel = supabase.channel(`citas-${tenant.id}`);
+
+      channel
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'citas',
+            filter: `consultorio_id=eq.${tenant.id}`,
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setCitas((prev) => [...prev, payload.new as Cita]);
+            } else if (payload.eventType === 'UPDATE') {
+              setCitas((prev) =>
+                prev.map((c) => (c.id === payload.new.id ? (payload.new as Cita) : c))
+              );
+            } else if (payload.eventType === 'DELETE') {
+              setCitas((prev) => prev.filter((c) => c.id !== payload.old.id));
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
+    };
+
+    setup();
 
     return () => {
-      supabase.removeChannel(channel);
+      mounted = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [tenant, fetchCitas]);
 
