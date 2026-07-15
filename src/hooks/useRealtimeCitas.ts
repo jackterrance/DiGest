@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenant } from '../context/TenantContext';
+import type { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface Cita {
   id: string;
@@ -24,6 +25,7 @@ export function useRealtimeCitas() {
   const { tenant } = useTenant();
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(false);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const fetchCitas = useCallback(async () => {
     if (!tenant) return;
@@ -43,48 +45,51 @@ export function useRealtimeCitas() {
       return;
     }
 
-    let mounted = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+      channelRef.current = null;
+    }
 
-    const setup = async () => {
-      // 1) Carga inicial
-      await fetchCitas();
+    fetchCitas();
 
-      if (!mounted) return;
+    const channelName = `citas-${tenant.id}-${Date.now()}`;
+    const channel = supabase.channel(channelName, {
+      config: { broadcast: { self: false }, presence: { key: '' } },
+    });
 
-      // 2) Crear canal y suscribir ANTES de agregar listeners
-      channel = supabase.channel(`citas-${tenant.id}`);
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'citas',
+        filter: `consultorio_id=eq.${tenant.id}`,
+      },
+      (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setCitas((prev) => [...prev, payload.new as Cita]);
+        } else if (payload.eventType === 'UPDATE') {
+          setCitas((prev) =>
+            prev.map((c) => (c.id === payload.new.id ? (payload.new as Cita) : c))
+          );
+        } else if (payload.eventType === 'DELETE') {
+          setCitas((prev) => prev.filter((c) => c.id !== payload.old.id));
+        }
+      }
+    );
 
-      channel
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'citas',
-            filter: `consultorio_id=eq.${tenant.id}`,
-          },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              setCitas((prev) => [...prev, payload.new as Cita]);
-            } else if (payload.eventType === 'UPDATE') {
-              setCitas((prev) =>
-                prev.map((c) => (c.id === payload.new.id ? (payload.new as Cita) : c))
-              );
-            } else if (payload.eventType === 'DELETE') {
-              setCitas((prev) => prev.filter((c) => c.id !== payload.old.id));
-            }
-          }
-        )
-        .subscribe();
-    };
+    channel.subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') {
+        console.error('Error en canal realtime citas');
+      }
+    });
 
-    setup();
+    channelRef.current = channel;
 
     return () => {
-      mounted = false;
-      if (channel) {
-        supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
       }
     };
   }, [tenant, fetchCitas]);

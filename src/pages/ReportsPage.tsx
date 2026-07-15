@@ -1,17 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTenant } from '../context/TenantContext'; // 👈 AGREGAR
 import { useRealtimeCitas } from '../hooks/useRealtimeCitas';
 import {
-  Wallet,
-  Calendar,
-  Users,
-  RefreshCw,
-  ShieldCheck,
-  X,
-  TrendingUp,
-  CreditCard,
-  DollarSign,
+  Wallet, Calendar, Users, RefreshCw, ShieldCheck, X,
+  TrendingUp, CreditCard, DollarSign,
 } from 'lucide-react';
 
 type ModalType = 'ingresos' | 'consultas' | 'pacientes' | null;
@@ -33,11 +27,13 @@ interface ExpedienteRow {
 }
 
 export function ReportsScreen() {
-  const { user } = useAuth() as { user: { consultorio_id?: string } | null };
+  // 👇 USAR useTenant PARA OBTENER consultorio_id
+  const { tenant } = useTenant();
+  const { user } = useAuth();
   const { citas } = useRealtimeCitas();
+  
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [dateRange, setDateRange] = useState<RangeType>('mes');
-
   const [pagos, setPagos] = useState<PagoRow[]>([]);
   const [expedientes, setExpedientes] = useState<ExpedienteRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,10 +50,9 @@ export function ReportsScreen() {
     pacientesInactivos: 0,
   });
 
-  // Cargar pagos y expedientes
   const loadData = async () => {
-    if (!user?.consultorio_id) {
-      console.warn('Sin consultorio_id');
+    if (!tenant?.id) {
+      console.warn('Sin tenant.id, no se pueden cargar datos');
       return;
     }
     setLoading(true);
@@ -67,23 +62,18 @@ export function ReportsScreen() {
         supabase
           .from('pagos_citas')
           .select('id, monto, metodo_pago, estado, fecha_pago, consultorio_id')
-          .eq('consultorio_id', user.consultorio_id),
+          .eq('consultorio_id', tenant.id), // 👈 tenant.id no user.consultorio_id
         supabase
           .from('beneficiarios_expedientes')
           .select('id, status, consultorio_id')
-          .eq('consultorio_id', user.consultorio_id),
+          .eq('consultorio_id', tenant.id),
       ]);
 
-      console.log('Pagos response:', pagosRes);
-      console.log('Expedientes response:', expRes);
+      console.log('Pagos:', pagosRes);
+      console.log('Expedientes:', expRes);
 
-      if (pagosRes.error) {
-        console.error('Error en pagos:', pagosRes.error);
-        setError('Error cargando pagos: ' + pagosRes.error.message);
-      }
-      if (expRes.error) {
-        console.error('Error en expedientes:', expRes.error);
-      }
+      if (pagosRes.error) setError('Error pagos: ' + pagosRes.error.message);
+      if (expRes.error) setError('Error exp: ' + expRes.error.message);
 
       if (pagosRes.data) setPagos(pagosRes.data as PagoRow[]);
       if (expRes.data) setExpedientes(expRes.data as ExpedienteRow[]);
@@ -96,10 +86,9 @@ export function ReportsScreen() {
   };
 
   useEffect(() => {
-    loadData();
-  }, [user?.consultorio_id]);
+    if (tenant?.id) loadData();
+  }, [tenant?.id]);
 
-  // Recalcular cuando cambian las dependencias
   useEffect(() => {
     calcularStats();
   }, [citas, pagos, expedientes, dateRange]);
@@ -124,7 +113,6 @@ export function ReportsScreen() {
   const calcularStats = () => {
     const fechaFiltro = getFechaFiltro();
 
-    // Citas filtradas por rango
     const citasFiltradas = citas.filter((c) => {
       if (!c.fecha) return false;
       const fechaCita = new Date(c.fecha + 'T00:00:00');
@@ -134,13 +122,8 @@ export function ReportsScreen() {
     const completadas = citasFiltradas.filter((c) => c.estado === 'completada').length;
     const canceladas = citasFiltradas.filter((c) => c.estado === 'cancelada').length;
 
-    // Pagos filtrados por rango - 👇 USA fecha_pago NO created_at
     const pagosFiltrados = pagos.filter((p) => {
       if (!p.fecha_pago) return false;
-      // Solo contar pagos confirmados/completados
-      if (p.estado && p.estado !== 'completado' && p.estado !== 'confirmado' && p.estado !== 'pagado') {
-        return false;
-      }
       return new Date(p.fecha_pago) >= fechaFiltro;
     });
 
@@ -157,7 +140,6 @@ export function ReportsScreen() {
       }
     });
 
-    // Pacientes
     const activos = expedientes.filter((e) => (e.status ?? '') === 'activo').length;
     const inactivos = expedientes.filter((e) => (e.status ?? '') === 'inactivo').length;
 
@@ -175,7 +157,6 @@ export function ReportsScreen() {
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-24 p-4 font-sans">
-      {/* Header con rango y refresh */}
       <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm mb-5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-emerald-50 rounded-xl text-emerald-600">
@@ -183,12 +164,9 @@ export function ReportsScreen() {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-700">Rango del Reporte</h3>
-            <p className="text-xs text-slate-400 hidden sm:block">
-              Sincronizado en tiempo real
-            </p>
+            <p className="text-xs text-slate-400 hidden sm:block">Sincronizado en tiempo real</p>
           </div>
         </div>
-
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/40">
             {(['hoy', 'semana', 'mes'] as RangeType[]).map((range) => (
@@ -205,7 +183,6 @@ export function ReportsScreen() {
               </button>
             ))}
           </div>
-
           <button
             onClick={loadData}
             disabled={loading}
@@ -216,14 +193,12 @@ export function ReportsScreen() {
         </div>
       </div>
 
-      {/* Error visible */}
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-3 mb-4 text-xs text-rose-700">
           ⚠️ {error}
         </div>
       )}
 
-      {/* Tarjetas */}
       <div className="space-y-4">
         <div
           onClick={() => setActiveModal('ingresos')}
@@ -283,7 +258,6 @@ export function ReportsScreen() {
         </p>
       </div>
 
-      {/* Modal detalle */}
       {activeModal && (
         <div className="fixed inset-0 bg-black/40 flex items-end sm:items-center justify-center p-0 sm:p-4 z-50">
           <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-xl overflow-hidden p-6 space-y-6 max-h-[85vh] overflow-y-auto">

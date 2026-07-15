@@ -351,13 +351,16 @@ export default function CalendarPage() {
       )}
 
       {/* Modal: Nueva cita */}
-      {showAddModal && (
-        <NuevaCitaModal
-          initialDate={modalInitialDate}
-          onClose={() => setShowAddModal(false)}
-          onSaved={refetch}
-        />
-      )}
+{showAddModal && (
+  <NuevaCitaModal
+    initialDate={modalInitialDate}
+    onClose={() => setShowAddModal(false)}
+    onSaved={() => {
+      // Realtime actualiza solo - no hace falta refetch
+    }}
+  />
+)}
+
 
       {/* Modal: Detalle/edición */}
       {selectedAppointmentId && (
@@ -365,7 +368,6 @@ export default function CalendarPage() {
           appointmentId={selectedAppointmentId}
           onClose={() => {
             setSelectedAppointmentId(null);
-            refetch();
           }}
         />
       )}
